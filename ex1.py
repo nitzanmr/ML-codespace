@@ -40,10 +40,13 @@ def h(x, theta):
     thetaTemp = theta.reshape((theta.size, 1))
     return xTemp @ thetaTemp
 
-def J(x, y, theta):
+def J(x, y, theta): 
     return (np.mean(np.square(x @ theta - y))) / 2
 
-def dJ(x, y, theta):
+def dJ(x, y, theta): #this doesnt work. dont know why
+    # print(np.matmul(np.transpose(x), (x @ theta - y)))
+    # print((np.transpose(x) @ ((x @ theta) - y)))
+    # print(np.transpose(x) @ ((x @ theta) - y))
     return np.transpose(x) @ ((x @ theta) - y)
 
 def GD(x, y, theta0, max_iter=20, alpha=0.1, J_epsi=10**-8, theta_epsi=10**-8):
@@ -51,8 +54,11 @@ def GD(x, y, theta0, max_iter=20, alpha=0.1, J_epsi=10**-8, theta_epsi=10**-8):
     last_cost = J(x, y, theta0)
     for k in range(max_iter):
         theta = last_theta - alpha * dJ(x, y, last_theta)
+        # print(last_theta)
         new_cost = J(x, y, theta)
-        if (np.abs(theta - last_theta) < theta_epsi or np.abs(new_cost - last_cost) < J_epsi):
+        check = np.abs(theta - last_theta) < theta_epsi 
+        check2 = np.abs(new_cost - last_cost) < J_epsi
+        if np.all(check is True)or np.all(check2 is True):
             break
         last_cost = new_cost
         last_theta = theta
@@ -64,7 +70,9 @@ def miniBatch(x, y, theta0, max_iter=20, alpha=0.1, J_epsi=10**-8, theta_epsi=10
     for k in range(max_iter):
         theta = last_theta - alpha * dJ(x[:,N*k:N*(k+1)], y[N*k:N*(k+1)], last_theta)
         new_cost = J(x, y, theta)
-        if (np.abs(theta - last_theta) < theta_epsi or np.abs(new_cost - last_cost) < J_epsi):
+        check = np.abs(theta - last_theta) < theta_epsi 
+        check2 = np.abs(new_cost - last_cost) < J_epsi
+        if np.all(check == True)or np.all(check2 is True):
             break
         last_cost = new_cost
         last_theta = theta
@@ -91,27 +99,27 @@ def Adam(x, y, theta0, max_iter=20, alpha=0.1, b=0.9, J_epsi=10**-8, theta_epsi=
     return theta
 
 
-data = np.loadtxt(open("cancer_data.csv", "rb"), delimiter=",")
-nData, u, v = fixData(data)
+# data = np.loadtxt(open("cancer_data.csv", "rb"), delimiter=",")
+# nData, u, v = fixData(data)
 
-print(nData.shape)
+# print(nData.shape)
 
-epsi = 10**-3
-td, tu, tv = fixData(nData) #test that the average is indeed 0 and sigma is 1
-for i in range(tu.size):
-    print(i)
-    print(tu[i])
-    assert tu[i] <= epsi
-    print(np.abs(tv[i] - 1))
-    assert np.abs(tv[i] - 1) <= epsi
-assert tu.all < epsi
+# epsi = 10**-3
+# td, tu, tv = fixData(nData) #test that the average is indeed 0 and sigma is 1
+# for i in range(tu.size):
+#     print(i)
+#     print(tu[i])
+#     assert tu[i] <= epsi
+#     print(np.abs(tv[i] - 1))
+#     assert np.abs(tv[i] - 1) <= epsi
+# assert tu.all < epsi
 
-print("normalization of data successfull")
+# print("normalization of data successfull")
 
-x = np.delete(nData, -1, axis=1)
-x = np.hstack((np.ones((x.shape[0],1)), x))
-y = nData[:,-1]
-y = y.reshape((y.size, 1))
+# x = np.delete(nData, -1, axis=1)
+# x = np.hstack((np.ones((x.shape[0],1)), x))
+# y = nData[:,-1]
+# y = y.reshape((y.size, 1))
 
 # theta = np.zeros((xsize, 1))
 # b = 0.9 # 0.99
