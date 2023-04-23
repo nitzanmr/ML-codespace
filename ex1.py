@@ -13,12 +13,6 @@ def NormalNarrow(num, u, s):
     return num
 
 def fixData(data, clean=0):
-    # Matrix form calculations:
-    # u = (np.transpose(data) @ (np.ones((data.shape[0], 1)) / data.shape[0]))
-    # u = u.reshape(data.shape[1])
-    # v = (np.transpose((u - data) ** 2) @ (np.ones((data.shape[0], 1)) / data.shape[0]))
-    # v = v.reshape(data.shape[1])
-    # using numpy:
     u = np.mean(data, axis=0)
     v = np.mean(((u - data) ** 2), axis=0)
     s = np.sqrt(v)
@@ -40,86 +34,110 @@ def h(x, theta):
     thetaTemp = theta.reshape((theta.size, 1))
     return xTemp @ thetaTemp
 
-def J(x, y, theta): 
+def J(x, y, theta):
     return (np.mean(np.square(x @ theta - y))) / 2
 
-def dJ(x, y, theta): #this doesnt work. dont know why
-    # print(np.matmul(np.transpose(x), (x @ theta - y)))
-    # print((np.transpose(x) @ ((x @ theta) - y)))
-    # print(np.transpose(x) @ ((x @ theta) - y))
+def dJ(x, y, theta):
     return np.transpose(x) @ ((x @ theta) - y)
 
-def GD(x, y, theta0, max_iter=20, alpha=0.1, J_epsi=10**-8, theta_epsi=10**-8):
+def GD(x, y, theta0, max_iter=20, alpha=0.1, J_epsi=10**-3, theta_epsi=10**-3):
     last_theta = theta0
     last_cost = J(x, y, theta0)
+    all_cost = []
     for k in range(max_iter):
-        theta = last_theta - alpha * dJ(x, y, last_theta)
-        # print(last_theta)
+        theta = last_theta - alpha * dJ(x, y, last_theta) / y.size
         new_cost = J(x, y, theta)
-        check = np.abs(theta - last_theta) < theta_epsi 
-        check2 = np.abs(new_cost - last_cost) < J_epsi
-        if np.all(check is True)or np.all(check2 is True):
+        all_cost.append(J(x,y,theta))
+        # print(new_cost)
+        if (False not in (np.abs(theta - last_theta) < theta_epsi) or np.abs(new_cost - last_cost) < J_epsi):
+            if False not in (np.abs(theta - last_theta) < theta_epsi):
+                print("theta ended")
+            if (np.abs(new_cost - last_cost) < J_epsi):
+                print("J ended")
             break
         last_cost = new_cost
         last_theta = theta
-    return theta
+    return theta , k , all_cost
         
-def miniBatch(x, y, theta0, max_iter=20, alpha=0.1, J_epsi=10**-8, theta_epsi=10**-8, N=50):
+def getBatch(x, y, fromK, toK, max):
+    fromK = fromK % max
+    toK = toK % max
+    if (fromK < toK):
+        xbatch = x[fromK : toK,:]
+        ybatch = y[fromK : toK]
+    else:
+        xbatch = np.vstack((x[fromK : max , :], x[0: toK]))
+        ybatch = np.vstack((y[fromK : max , :], y[0: toK]))
+    return xbatch, ybatch
+
+def miniBatch(x, y, theta0, max_iter=20, alpha=0.1, J_epsi=10**-5, theta_epsi=10**-5, N=30):
     last_theta = theta0
     last_cost = J(x, y, theta0)
+    all_cost = []
     for k in range(max_iter):
-        theta = last_theta - alpha * dJ(x[:,N*k:N*(k+1)], y[N*k:N*(k+1)], last_theta)
+        xbatch, ybatch = getBatch(x, y, k*N, (k+1)*N, y.size)
+        theta = last_theta - alpha * dJ(xbatch, ybatch, last_theta) / N
         new_cost = J(x, y, theta)
-        check = np.abs(theta - last_theta) < theta_epsi 
-        check2 = np.abs(new_cost - last_cost) < J_epsi
-        if np.all(check == True)or np.all(check2 is True):
+        all_cost.append(new_cost)
+        print(new_cost)
+        if (False not in (np.abs(theta - last_theta) < theta_epsi) or np.abs(new_cost - last_cost) < J_epsi):
+            if False not in (np.abs(theta - last_theta) < theta_epsi):
+                print("theta ended")
+            if (np.abs(new_cost - last_cost) < J_epsi):
+                print("J ended")
             break
         last_cost = new_cost
         last_theta = theta
-    return theta
+    return theta, k,all_cost
 
-def Adam(x, y, theta0, max_iter=20, alpha=0.1, b=0.9, J_epsi=10**-8, theta_epsi=10**-8):
+def Adam(x, y, theta0, max_iter=20, alpha=0.4, b=0.9, J_epsi=10**-5, theta_epsi=10**-5):
     epsi = 10**-8
     alphaj = np.ones((x.shape[1], 1))
     g = np.zeros((x.shape[1], 1))
-    v = np.zeros((x.shape, 1))
+    v = np.zeros((x.shape[1], 1))
     last_theta = theta0
     last_cost = np.mean(np.square(x @ theta0 - y))
+    all_cost = []
     for k in range(max_iter):
-        new_cost = np.mean(np.square(x @ last_theta - y))
         grad = (np.transpose(x)) @ ((x @ last_theta) - y)
-        v = (b * v) + (1-b) * grad
+        v = (b * v) + (1-b) * dJ(x, y, last_theta)
         g = g + np.square(grad)
         alphaj = alpha / np.sqrt(g + epsi)
-        theta = theta - alphaj * v
-        if (np.abs(theta - last_theta) < theta_epsi or np.abs(new_cost - last_cost) < J_epsi):
+        theta = last_theta - alphaj * v
+        new_cost = J(x, y, theta)
+        all_cost.append(new_cost)
+        if (False not in (np.abs(theta - last_theta) < theta_epsi) or np.abs(new_cost - last_cost) < J_epsi):
+            if False not in (np.abs(theta - last_theta) < theta_epsi):
+                print("theta ended")
+            if (np.abs(new_cost - last_cost) < J_epsi):
+                print("J ended")
             break
         last_cost = new_cost
         last_theta = theta
-    return theta
+    return theta, k, all_cost
 
 
-# data = np.loadtxt(open("cancer_data.csv", "rb"), delimiter=",")
-# nData, u, v = fixData(data)
+data = np.loadtxt(open("cancer_data.csv", "rb"), delimiter=",")
+nData, u, v = fixData(data)
 
 # print(nData.shape)
 
-# epsi = 10**-3
-# td, tu, tv = fixData(nData) #test that the average is indeed 0 and sigma is 1
-# for i in range(tu.size):
-#     print(i)
-#     print(tu[i])
-#     assert tu[i] <= epsi
-#     print(np.abs(tv[i] - 1))
-#     assert np.abs(tv[i] - 1) <= epsi
-# assert tu.all < epsi
+epsi = 10**-8
+tu = np.mean(nData, axis=0)
+tv = np.mean(((tu - nData) ** 2), axis=0)
+assert True not in (tu > epsi)
+assert True not in (np.abs(tv - 1) > epsi)
 
 # print("normalization of data successfull")
 
-# x = np.delete(nData, -1, axis=1)
-# x = np.hstack((np.ones((x.shape[0],1)), x))
-# y = nData[:,-1]
-# y = y.reshape((y.size, 1))
+x = np.delete(nData, -1, axis=1)
+x = np.hstack((np.ones((x.shape[0],1)), x))
+y = nData[:,-1]
+y = y.reshape((y.size, 1))
+theta0 = np.zeros((x.shape[1], 1))
+# theta, k = Adam(x, y,theta0 = theta0, max_iter=100)
+# print(J(x, y, theta))
+# print(k)
 
 # theta = np.zeros((xsize, 1))
 # b = 0.9 # 0.99
