@@ -3,7 +3,7 @@ from numpy.linalg import det
 from scipy.stats import multivariate_normal
 import matplotlib.pyplot as plt
 
-np.random.seed(42) #sets the random state to be 42 on all the np.random placements in the code.
+np.random.seed(42)
 n_samples = 1000
 g1_precentage = 0.7
 g2_precentage = 0.3
@@ -33,13 +33,13 @@ sigma = np.zeros((k_classes, ), dtype=object)
 u_means = np.zeros((k_classes, X.shape[1]))
 
 for i in range(k_classes):
-    sigma[i] = np.eye((X.shape[1])) #gives the eye matrix in shape x.shape[1]
-    u_means[i] = X[np.random.randint(0, n_samples), :] # sets the means of the classes to be at a random location at first.
+    sigma[i] = np.eye((X.shape[1]))
+    u_means[i] = X[np.random.randint(0, n_samples), :]
 # sigma = sigma * np.std(X, axis=0)
 
-plt.scatter(u_means[:, 0], u_means[:, 1], s=20) #prints the random alocated points into the plt in a scatter form.
+plt.scatter(u_means[:, 0], u_means[:, 1], s=20)
     
-w = np.zeros((n_samples, k_classes))
+w = np.zeros((n_samples, k_classes))    
 
 for k in range(100):
     xproba = np.zeros((n_samples,))
@@ -50,6 +50,7 @@ for k in range(100):
         w[:, j] = jproba * pi[j] 
         xproba += w[:, j]
     w = w / xproba.reshape((n_samples, 1))
+    
     pi = np.mean(w, axis=0)
     u_means = (np.transpose(w) @ X) / (pi.reshape((k_classes, 1)) * n_samples)
     for j in range(k_classes):
